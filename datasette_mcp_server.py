@@ -757,11 +757,17 @@ def main():
         Config = build_config_from_cli(args)
         logger.info(f"Using single instance mode: {args.instance} -> {args.url}")
     else:
-        # Load configuration from file
+        # Load configuration from file (args.config may be None for auto-discovery)
         Config = load_config(args.config)
         
         if Config is None:
-            logger.error("Failed to load configuration. Please check your configuration file.")
+            if args.config:
+                logger.error(f"Failed to load configuration file: {args.config}")
+            else:
+                logger.error("No configuration file found in default locations and no --instance specified.")
+                logger.error("Either provide --config <file>, use --instance with --url, or place a config file in:")
+                logger.error("  - ~/.config/datasette-mcp/config.yaml")
+                logger.error("  - /etc/datasette-mcp/config.yaml")
             sys.exit(1)
     
     # Validate configuration
