@@ -657,14 +657,64 @@ async def describe_table(instance: str, database: str, table: str, ctx: Context 
             await ctx.error(f"Unexpected error in describe_table: {e}")
         raise
 
+def build_config_from_cli(args) -> Dict[str, Any]:
+    """Build configuration from CLI arguments for single instance mode."""
+    config = {
+        'datasette_instances': {
+            args.instance: {
+                'url': args.url
+            }
+        }
+    }
+    
+    # Add optional instance fields
+    if args.description:
+        config['datasette_instances'][args.instance]['description'] = args.description
+    if args.auth_token:
+        config['datasette_instances'][args.instance]['auth_token'] = args.auth_token
+    
+    # Add global configuration options
+    if args.courtesy_delay is not None:
+        config['courtesy_delay_seconds'] = args.courtesy_delay
+    
+    return config
+
 def main():
     """Main entry point for CLI."""
     parser = argparse.ArgumentParser(description="Datasette MCP Server")
-    parser.add_argument(
+    
+    # Configuration source options
+    config_group = parser.add_mutually_exclusive_group()
+    config_group.add_argument(
         "--config", 
         type=Path,
         help="Path to configuration file"
     )
+    config_group.add_argument(
+        "--instance",
+        help="Instance name for single instance mode (requires --url)"
+    )
+    
+    # Single instance configuration options
+    parser.add_argument(
+        "--url",
+        help="Datasette instance URL (required with --instance)"
+    )
+    parser.add_argument(
+        "--description",
+        help="Description for the Datasette instance"
+    )
+    parser.add_argument(
+        "--auth-token",
+        help="Bearer token for authentication"
+    )
+    parser.add_argument(
+        "--courtesy-delay",
+        type=float,
+        help="Courtesy delay between requests in seconds (default: 0.5)"
+    )
+    
+    # Transport options
     parser.add_argument(
         "--transport",
         choices=["stdio", "streamable-http", "sse"],
@@ -694,13 +744,25 @@ def main():
     # Set log level
     logging.getLogger().setLevel(getattr(logging, args.log_level))
     
-    # Load configuration
+    # Global config declaration
     global Config
-    Config = load_config(args.config)
     
-    if Config is None:
-        logger.error("Failed to load configuration. Please check your configuration file.")
-        sys.exit(1)
+    # Validate CLI arguments for single instance mode
+    if args.instance:
+        if not args.url:
+            logger.error("--url is required when using --instance")
+            sys.exit(1)
+        
+        # Build config from CLI arguments
+        Config = build_config_from_cli(args)
+        logger.info(f"Using single instance mode: {args.instance} -> {args.url}")
+    else:
+        # Load configuration from file
+        Config = load_config(args.config)
+        
+        if Config is None:
+            logger.error("Failed to load configuration. Please check your configuration file.")
+            sys.exit(1)
     
     # Validate configuration
     if not validate_config(Config):
