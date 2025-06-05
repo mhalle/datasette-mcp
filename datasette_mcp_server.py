@@ -661,7 +661,7 @@ def build_config_from_cli(args) -> Dict[str, Any]:
     """Build configuration from CLI arguments for single instance mode."""
     config = {
         'datasette_instances': {
-            args.instance: {
+            args.name: {
                 'url': args.url
             }
         }
@@ -669,9 +669,9 @@ def build_config_from_cli(args) -> Dict[str, Any]:
     
     # Add optional instance fields
     if args.description:
-        config['datasette_instances'][args.instance]['description'] = args.description
+        config['datasette_instances'][args.name]['description'] = args.description
     if args.auth_token:
-        config['datasette_instances'][args.instance]['auth_token'] = args.auth_token
+        config['datasette_instances'][args.name]['auth_token'] = args.auth_token
     
     # Add global configuration options
     if args.courtesy_delay is not None:
@@ -691,14 +691,14 @@ def main():
         help="Path to configuration file"
     )
     config_group.add_argument(
-        "--instance",
+        "--name",
         help="Instance name for single instance mode (requires --url)"
     )
     
     # Single instance configuration options
     parser.add_argument(
         "--url",
-        help="Datasette instance URL (required with --instance)"
+        help="Datasette instance URL (required with --name)"
     )
     parser.add_argument(
         "--description",
@@ -748,14 +748,14 @@ def main():
     global Config
     
     # Validate CLI arguments for single instance mode
-    if args.instance:
+    if args.name:
         if not args.url:
-            logger.error("--url is required when using --instance")
+            logger.error("--url is required when using --name")
             sys.exit(1)
         
         # Build config from CLI arguments
         Config = build_config_from_cli(args)
-        logger.info(f"Using single instance mode: {args.instance} -> {args.url}")
+        logger.info(f"Using single instance mode: {args.name} -> {args.url}")
     else:
         # Load configuration from file (args.config may be None for auto-discovery)
         Config = load_config(args.config)
@@ -764,8 +764,8 @@ def main():
             if args.config:
                 logger.error(f"Failed to load configuration file: {args.config}")
             else:
-                logger.error("No configuration file found in default locations and no --instance specified.")
-                logger.error("Either provide --config <file>, use --instance with --url, or place a config file in:")
+                logger.error("No configuration file found in default locations and no --name specified.")
+                logger.error("Either provide --config <file>, use --name with --url, or place a config file in:")
                 logger.error("  - ~/.config/datasette-mcp/config.yaml")
                 logger.error("  - /etc/datasette-mcp/config.yaml")
             sys.exit(1)
