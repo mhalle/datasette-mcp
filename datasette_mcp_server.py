@@ -5,7 +5,7 @@ Datasette MCP Server
 A Model Context Protocol server that provides read-only access to Datasette instances.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.4.0"
 # /// script
 # requires-python = ">=3.8"
 # dependencies = [
@@ -388,37 +388,7 @@ def build_describe_table_url(
 
 mcp = FastMCP(
     name="Datasette Explorer",
-    instructions="""
-    This server provides read-only access to Datasette instances.
-    
-    EXPLORATION WORKFLOW:
-    1. Use list_instances() to see available Datasette instances
-    2. Use list_databases(instance) to see available databases
-    3. Use list_tables(instance, database) to see tables in a database  
-    4. Use describe_table(instance, database, table) to understand table structure
-    5. Use execute_sql() for data queries and analysis
-    6. Use search_table() for full-text search when available
-    
-    SQL DIALECT AND SYNTAX:
-    • Datasette uses SQLite3 SQL dialect
-    • Column names with spaces or special characters: use [square brackets] like [My Column]
-    • SQLite functions available: date(), datetime(), julianday(), etc.
-    • Case-insensitive LIKE operator, glob() for pattern matching
-    
-    SQL BEST PRACTICES:
-    • Always use LIMIT for initial exploration: SELECT * FROM table LIMIT 10
-    • Use COUNT(*) to understand table sizes: SELECT COUNT(*) FROM table
-    • GROUP BY for faceting/aggregation: SELECT category, COUNT(*) FROM products GROUP BY category
-    • ORDER BY for sorting: SELECT * FROM users ORDER BY created_date DESC LIMIT 10
-    • Combine multiple tables with JOINs when needed
-    • Quote column names with spaces: SELECT [First Name], [Last Name] FROM users
-    
-    FULL-TEXT SEARCH:
-    • Use search_table() instead of complex SQLite FTS syntax
-    • Try simple terms first: search_table("prod", "blog", "posts", "climate change")
-    • Use raw_mode=True for AND/OR/NOT: search_table(..., raw_mode=True) with "term1 AND term2"
-    • Search specific columns: search_table(..., search_column="title")
-    """
+    instructions=""  # Will be set dynamically after config is loaded
 )
 
 @mcp.tool()
@@ -663,7 +633,7 @@ def build_config_from_cli(args) -> Dict[str, Any]:
     """Build configuration from CLI arguments for single instance mode."""
     config = {
         'datasette_instances': {
-            args.name: {
+            args.id: {
                 'url': args.url
             }
         }
@@ -671,15 +641,74 @@ def build_config_from_cli(args) -> Dict[str, Any]:
     
     # Add optional instance fields
     if args.description:
-        config['datasette_instances'][args.name]['description'] = args.description
+        config['datasette_instances'][args.id]['description'] = args.description
+        # For single instance mode, also use description as global description
+        config['description'] = args.description
     if args.auth_token:
-        config['datasette_instances'][args.name]['auth_token'] = args.auth_token
+        config['datasette_instances'][args.id]['auth_token'] = args.auth_token
     
     # Add global configuration options
     if args.courtesy_delay is not None:
         config['courtesy_delay_seconds'] = args.courtesy_delay
     
     return config
+
+def build_instructions(config: Dict[str, Any]) -> str:
+    """Build enhanced instructions with dataset description."""
+    
+    # Base instructions
+    base_instructions = """
+    This server provides read-only access to Datasette instances.
+    
+    EXPLORATION WORKFLOW:
+    1. Use list_instances() to see available Datasette instances
+    2. Use list_databases(instance) to see available databases
+    3. Use list_tables(instance, database) to see tables in a database  
+    4. Use describe_table(instance, database, table) to understand table structure
+    5. Use execute_sql() for data queries and analysis
+    6. Use search_table() for full-text search when available
+    
+    SQL DIALECT AND SYNTAX:
+    • Datasette uses SQLite3 SQL dialect
+    • Column names with spaces or special characters: use [square brackets] like [My Column]
+    • SQLite functions available: date(), datetime(), julianday(), etc.
+    • Case-insensitive LIKE operator, glob() for pattern matching
+    
+    SQL BEST PRACTICES:
+    • Always use LIMIT for initial exploration: SELECT * FROM table LIMIT 10
+    • Use COUNT(*) to understand table sizes: SELECT COUNT(*) FROM table
+    • GROUP BY for faceting/aggregation: SELECT category, COUNT(*) FROM products GROUP BY category
+    • ORDER BY for sorting: SELECT * FROM users ORDER BY created_date DESC LIMIT 10
+    • Combine multiple tables with JOINs when needed
+    • Quote column names with spaces: SELECT [First Name], [Last Name] FROM users
+    
+    FULL-TEXT SEARCH:
+    • Use search_table() instead of complex SQLite FTS syntax
+    • Try simple terms first: search_table("prod", "blog", "posts", "climate change")
+    • Use raw_mode=True for AND/OR/NOT: search_table(..., raw_mode=True) with "term1 AND term2"
+    • Search specific columns: search_table(..., search_column="title")
+    """
+    
+    # Build dataset description section
+    dataset_section = ""
+    
+    # Check for global description
+    global_description = config.get('description')
+    if global_description:
+        dataset_section = f"DATASET DESCRIPTION:\n{global_description}\n\n"
+    
+    # If no global description, check for instance descriptions
+    elif config.get('datasette_instances'):
+        instance_descriptions = []
+        for name, instance_config in config['datasette_instances'].items():
+            description = instance_config.get('description', '')
+            if description:
+                instance_descriptions.append(f"- {name}: {description}")
+        
+        if instance_descriptions:
+            dataset_section = "DATASET DESCRIPTION:\nAvailable instances:\n" + "\n".join(instance_descriptions) + "\n\n"
+    
+    return dataset_section + base_instructions.strip()
 
 def main():
     """Main entry point for CLI."""
@@ -693,14 +722,14 @@ def main():
         help="Path to configuration file"
     )
     config_group.add_argument(
-        "--name",
-        help="Instance name for single instance mode (requires --url)"
+        "--id",
+        help="Instance ID for single instance mode (requires --url)"
     )
     
     # Single instance configuration options
     parser.add_argument(
         "--url",
-        help="Datasette instance URL (required with --name)"
+        help="Datasette instance URL (required with --id)"
     )
     parser.add_argument(
         "--description",
@@ -750,14 +779,14 @@ def main():
     global Config
     
     # Validate CLI arguments for single instance mode
-    if args.name:
+    if args.id:
         if not args.url:
-            logger.error("--url is required when using --name")
+            logger.error("--url is required when using --id")
             sys.exit(1)
         
         # Build config from CLI arguments
         Config = build_config_from_cli(args)
-        logger.info(f"Using single instance mode: {args.name} -> {args.url}")
+        logger.info(f"Using single instance mode: {args.id} -> {args.url}")
     else:
         # Load configuration from file (args.config may be None for auto-discovery)
         Config = load_config(args.config)
@@ -766,8 +795,8 @@ def main():
             if args.config:
                 logger.error(f"Failed to load configuration file: {args.config}")
             else:
-                logger.error("No configuration file found in default locations and no --name specified.")
-                logger.error("Either provide --config <file>, use --name with --url, or place a config file in:")
+                logger.error("No configuration file found in default locations and no --id specified.")
+                logger.error("Either provide --config <file>, use --id with --url, or place a config file in:")
                 logger.error("  - ~/.config/datasette-mcp/config.yaml")
                 logger.error("  - /etc/datasette-mcp/config.yaml")
             sys.exit(1)
@@ -778,6 +807,10 @@ def main():
         sys.exit(1)
     
     logger.info(f"Configured instances: {list(Config['datasette_instances'].keys())}")
+
+    # Set instructions based on configuration
+    # Using internal MCP server attribute as workaround
+    mcp._mcp_server.instructions = build_instructions(Config)
 
     # Run the server
     if args.transport == "stdio":
