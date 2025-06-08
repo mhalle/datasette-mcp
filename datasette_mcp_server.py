@@ -629,11 +629,28 @@ async def describe_table(instance: str, database: str, table: str, ctx: Context 
             await ctx.error(f"Unexpected error in describe_table: {e}")
         raise
 
+def derive_id_from_url(url: str) -> str:
+    """Derive instance ID from URL hostname by replacing . and : with _"""
+    from urllib.parse import urlparse
+    
+    parsed = urlparse(url)
+    hostname = parsed.hostname or "unknown"
+    
+    # Add port if present
+    if parsed.port:
+        hostname = f"{hostname}:{parsed.port}"
+    
+    # Replace . and : with _
+    return hostname.replace(".", "_").replace(":", "_")
+
 def build_config_from_cli(args) -> Dict[str, Any]:
     """Build configuration from CLI arguments for single instance mode."""
+    # Use provided ID or derive from URL
+    instance_id = args.id if args.id else derive_id_from_url(args.url)
+    
     config = {
         'datasette_instances': {
-            args.id: {
+            instance_id: {
                 'url': args.url
             }
         }
@@ -641,11 +658,9 @@ def build_config_from_cli(args) -> Dict[str, Any]:
     
     # Add optional instance fields
     if args.description:
-        config['datasette_instances'][args.id]['description'] = args.description
+        config['datasette_instances'][instance_id]['description'] = args.description
         # For single instance mode, also use description as global description
         config['description'] = args.description
-    if args.auth_token:
-        config['datasette_instances'][args.id]['auth_token'] = args.auth_token
     
     # Add global configuration options
     if args.courtesy_delay is not None:
@@ -722,22 +737,18 @@ def main():
         help="Path to configuration file"
     )
     config_group.add_argument(
-        "--id",
-        help="Instance ID for single instance mode (requires --url)"
+        "--url",
+        help="Datasette instance URL for single instance mode"
     )
     
     # Single instance configuration options
     parser.add_argument(
-        "--url",
-        help="Datasette instance URL (required with --id)"
+        "--id",
+        help="Instance ID (optional, derived from URL if not specified)"
     )
     parser.add_argument(
         "--description",
         help="Description for the Datasette instance"
-    )
-    parser.add_argument(
-        "--auth-token",
-        help="Bearer token for authentication"
     )
     parser.add_argument(
         "--courtesy-delay",
@@ -779,14 +790,11 @@ def main():
     global Config
     
     # Validate CLI arguments for single instance mode
-    if args.id:
-        if not args.url:
-            logger.error("--url is required when using --id")
-            sys.exit(1)
-        
+    if args.url:
         # Build config from CLI arguments
         Config = build_config_from_cli(args)
-        logger.info(f"Using single instance mode: {args.id} -> {args.url}")
+        instance_id = args.id if args.id else derive_id_from_url(args.url)
+        logger.info(f"Using single instance mode: {instance_id} -> {args.url}")
     else:
         # Load configuration from file (args.config may be None for auto-discovery)
         Config = load_config(args.config)
@@ -795,8 +803,8 @@ def main():
             if args.config:
                 logger.error(f"Failed to load configuration file: {args.config}")
             else:
-                logger.error("No configuration file found in default locations and no --id specified.")
-                logger.error("Either provide --config <file>, use --id with --url, or place a config file in:")
+                logger.error("No configuration file found in default locations and no --url specified.")
+                logger.error("Either provide --config <file>, use --url for single instance mode, or place a config file in:")
                 logger.error("  - ~/.config/datasette-mcp/config.yaml")
                 logger.error("  - /etc/datasette-mcp/config.yaml")
             sys.exit(1)
