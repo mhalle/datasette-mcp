@@ -247,7 +247,7 @@ This server is built with [FastMCP](https://gofastmcp.com/), making it easy to e
 
 ## License
 
-[Add your license here]
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
 
 ## Related Projects
 
