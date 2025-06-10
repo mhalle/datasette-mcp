@@ -5,7 +5,7 @@ Datasette MCP Server
 A Model Context Protocol server that provides read-only access to Datasette instances.
 """
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 # /// script
 # requires-python = ">=3.8"
 # dependencies = [
@@ -229,19 +229,6 @@ def build_database_url(base_url: str, database: str, shape: Optional[str] = None
         params.append(("_next", next_token))
     return build_url_with_params(url, params)
 
-def build_describe_table_url(
-    base_url: str,
-    database: str,
-    table: str,
-    shape: Optional[str] = None
-) -> str:
-    """Build URL for getting table schema and metadata."""
-    url = safe_url_join(base_url, quote(database), f"{quote(table)}.json")
-    params = []
-    if shape is not None:
-        params.append(("_shape", shape))
-    params.append(("_size", "0"))  # Get metadata only, not data rows
-    return build_url_with_params(url, params)
 
 # FastMCP Server Setup
 
@@ -427,36 +414,6 @@ async def list_databases(instance: str, ctx: Context = None) -> Dict[str, Any]:
             await ctx.error(f"Unexpected error in list_databases: {e}")
         raise
 
-@mcp.tool()
-async def list_tables(instance: str, database: str, ctx: Context = None) -> Dict[str, Any]:
-    """List all tables in a database.
-    
-    Args:
-        instance: Name of the Datasette instance (from config)
-        database: Database name
-        
-    Returns:
-        List of tables and metadata
-    """
-    try:
-        instance_config = get_instance_config(Config, instance)
-        
-        url = build_database_url(instance_config['url'], database)
-        
-        if ctx:
-            await ctx.info(f"Listing tables for {instance}/{database}")
-        
-        return await make_datasette_request(url, "list_tables", instance)
-        
-    except ValueError as e:
-        # Configuration errors (instance not found, missing URL, etc.) or Datasette API errors
-        if ctx:
-            await ctx.error(f"Error in list_tables: {e}")
-        raise
-    except Exception as e:
-        if ctx:
-            await ctx.error(f"Unexpected error in list_tables: {e}")
-        raise
 
 @mcp.tool()
 async def describe_database(instance: str, database: str, ctx: Context = None) -> Dict[str, Any]:
@@ -489,37 +446,6 @@ async def describe_database(instance: str, database: str, ctx: Context = None) -
             await ctx.error(f"Unexpected error in describe_database: {e}")
         raise
 
-@mcp.tool()
-async def describe_table(instance: str, database: str, table: str, ctx: Context = None) -> Dict[str, Any]:
-    """Get table schema, column information, and metadata.
-    
-    Args:
-        instance: Name of the Datasette instance (from config)
-        database: Database name
-        table: Table name
-        
-    Returns:
-        Table schema and metadata
-    """
-    try:
-        instance_config = get_instance_config(Config, instance)
-        
-        url = build_describe_table_url(instance_config['url'], database, table)
-        
-        if ctx:
-            await ctx.info(f"Describing table {instance}/{database}/{table}")
-        
-        return await make_datasette_request(url, "describe_table", instance)
-        
-    except ValueError as e:
-        # Configuration errors (instance not found, missing URL, etc.) or Datasette API errors
-        if ctx:
-            await ctx.error(f"Error in describe_table: {e}")
-        raise
-    except Exception as e:
-        if ctx:
-            await ctx.error(f"Unexpected error in describe_table: {e}")
-        raise
 
 
 def main():

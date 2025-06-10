@@ -240,14 +240,10 @@ def build_instructions(config: Dict[str, Any]) -> str:
     
     EXPLORATION WORKFLOW:
     1. Use list_instances() to see available Datasette instances
-    2. Use list_databases(instance) to see available databases
-    3. Use describe_database(instance, database) to get complete database schema with all tables and columns - MOST EFFICIENT
+    2. Use list_databases(instance) to see available databases with table counts
+    3. Use describe_database(instance, database) to get complete database schema with all tables and columns
     4. Use execute_sql() for data queries and analysis
     5. Use search_table() for full-text search when available
-    
-    ALTERNATIVE WORKFLOW (less efficient):
-    • Use list_tables(instance, database) for just table names and counts
-    • Use describe_table(instance, database, table) for individual table schemas
     
     SQL DIALECT AND SYNTAX:
     • Datasette uses SQLite3 SQL dialect
