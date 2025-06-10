@@ -1,4 +1,4 @@
-# Datasette MCP Server
+# Datasette MCP
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides read-only access to [Datasette](https://datasette.io/) instances. This server enables AI assistants to explore, query, and analyze data from Datasette databases through a standardized interface.
 
@@ -23,7 +23,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 
 ```bash
 # Run directly with uv
-uv run datasette_mcp_server.py --help
+uv run datasette_mcp.py --help
 
 # Or install dependencies first
 uv sync
@@ -33,7 +33,7 @@ uv sync
 
 ```bash
 pip install fastmcp httpx pyyaml
-python datasette_mcp_server.py --help
+python datasette_mcp.py --help
 ```
 
 ## Configuration
@@ -70,11 +70,10 @@ The server automatically searches for config files in:
 For quick single-instance setup:
 
 ```bash
-python datasette_mcp_server.py \
-  --name my_db \
+python datasette_mcp.py \
   --url https://my-datasette.herokuapp.com \
-  --description "My database" \
-  --auth-token "your-token"
+  --id my_db \
+  --description "My database"
 ```
 
 ## Usage
@@ -83,36 +82,35 @@ python datasette_mcp_server.py \
 
 ```bash
 # Use auto-discovered config file
-python datasette_mcp_server.py
+python datasette_mcp.py
 
 # Use specific config file
-python datasette_mcp_server.py --config /path/to/config.yaml
+python datasette_mcp.py --config /path/to/config.yaml
 
 # Single instance mode
-python datasette_mcp_server.py --name mydb --url https://example.com
+python datasette_mcp.py --url https://example.com --id mydb
 ```
 
 ### Transport Options
 
 ```bash
 # stdio (default, for MCP clients)
-python datasette_mcp_server.py
+python datasette_mcp.py
 
 # HTTP server
-python datasette_mcp_server.py --transport streamable-http --port 8080
+python datasette_mcp.py --transport streamable-http --port 8080
 
 # Server-Sent Events
-python datasette_mcp_server.py --transport sse --host 0.0.0.0 --port 8080
+python datasette_mcp.py --transport sse --host 0.0.0.0 --port 8080
 ```
 
 ### All CLI Options
 
 ```
 --config CONFIG           Path to configuration file
---name NAME               Instance name for single instance mode
---url URL                 Datasette instance URL (required with --name)
+--url URL                 Datasette instance URL for single instance mode
+--id ID                   Instance ID (optional, derived from URL if not specified)
 --description DESC        Description for the instance
---auth-token TOKEN        Bearer token for authentication
 --courtesy-delay FLOAT    Delay between requests in seconds
 --transport TRANSPORT     Protocol: stdio, streamable-http, sse
 --host HOST               Host for HTTP transports (default: 127.0.0.1)
@@ -238,7 +236,7 @@ The server provides detailed error messages for:
 Configure logging levels for debugging:
 
 ```bash
-python datasette_mcp_server.py --log-level DEBUG
+python datasette_mcp.py --log-level DEBUG
 ```
 
 Log levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`

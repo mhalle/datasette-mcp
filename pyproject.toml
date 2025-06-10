@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "datasette-mcp-server"
+name = "datasette-mcp"
 version = "0.4.0"
 description = "A Model Context Protocol server for Datasette instances"
 authors = [
@@ -37,12 +37,12 @@ dev = [
 ]
 
 [project.scripts]
-datasette-mcp-server = "datasette_mcp_server:main"
+datasette-mcp = "datasette_mcp:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/datasette-mcp-server"
-Repository = "https://github.com/yourusername/datasette-mcp-server"
-Issues = "https://github.com/yourusername/datasette-mcp-server/issues"
+Homepage = "https://github.com/yourusername/datasette-mcp"
+Repository = "https://github.com/yourusername/datasette-mcp"
+Issues = "https://github.com/yourusername/datasette-mcp/issues"
 
 [tool.ruff]
 line-length = 88
