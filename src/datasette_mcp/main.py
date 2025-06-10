@@ -408,8 +408,8 @@ async def list_databases(instance: str, ctx: Context = None) -> Dict[str, Any]:
                 databases.append({
                     "name": key,
                     "path": value.get('path', f'/{key}'),
-                    "tables_count": len(value.get('tables', [])),
-                    "hidden_count": value.get('hidden_count', 0)
+                    "tables_count": value.get('tables_count', 0),
+                    "hidden_tables_count": value.get('hidden_tables_count', 0)
                 })
         
         return {
