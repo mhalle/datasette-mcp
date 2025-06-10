@@ -78,7 +78,7 @@ async def make_datasette_request(url: str, operation: str, instance_name: str) -
     await apply_courtesy_delay(instance_name)
     
     # Get instance configuration for headers
-    instance_config = get_instance_config(instance_name)
+    instance_config = get_instance_config(Config, instance_name)
     headers = instance_config['headers']
     
     try:
@@ -312,7 +312,7 @@ async def search_table(
         Search results and metadata
     """
     try:
-        instance_config = get_instance_config(instance)
+        instance_config = get_instance_config(Config, instance)
         
         url = build_search_table_url(
             instance_config['url'], database, table, search_term, search_column, 
