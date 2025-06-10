@@ -5,7 +5,7 @@ Datasette MCP Server
 A Model Context Protocol server that provides read-only access to Datasette instances.
 """
 
-__version__ = "0.5.0"
+__version__ = "0.7.0"
 # /// script
 # requires-python = ">=3.8"
 # dependencies = [
