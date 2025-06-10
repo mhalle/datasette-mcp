@@ -210,11 +210,17 @@ def build_config_from_cli(args) -> Dict[str, Any]:
 def get_instance_config(config: Dict[str, Any], instance: str) -> Dict[str, Any]:
     """Get complete instance configuration including URL and auth headers.
     
+    Auto-resolves to the single instance if there's exactly one configured.
     Assumes config has already been validated at startup.
     """
+    available = list(config['datasette_instances'].keys())
+    
     if instance not in config['datasette_instances']:
-        available = list(config['datasette_instances'].keys())
-        raise ValueError(f"Unknown instance '{instance}'. Available: {available}")
+        # If there's exactly one instance, auto-select it
+        if len(available) == 1:
+            instance = available[0]
+        else:
+            raise ValueError(f"Unknown instance '{instance}'. Available: {available}")
     
     instance_config = config['datasette_instances'][instance]
     
