@@ -23,7 +23,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 
 ```bash
 # Run directly with uv
-uv run datasette_mcp.py --help
+uv run --module datasette_mcp.main --help
 
 # Or install dependencies first
 uv sync
@@ -33,7 +33,7 @@ uv sync
 
 ```bash
 pip install fastmcp httpx pyyaml
-python datasette_mcp.py --help
+python -m datasette_mcp.main --help
 ```
 
 ## Configuration
@@ -70,7 +70,7 @@ The server automatically searches for config files in:
 For quick single-instance setup:
 
 ```bash
-python datasette_mcp.py \
+python -m datasette_mcp.main \
   --url https://my-datasette.herokuapp.com \
   --id my_db \
   --description "My database"
@@ -82,26 +82,26 @@ python datasette_mcp.py \
 
 ```bash
 # Use auto-discovered config file
-python datasette_mcp.py
+python -m datasette_mcp.main
 
 # Use specific config file
-python datasette_mcp.py --config /path/to/config.yaml
+python -m datasette_mcp.main --config /path/to/config.yaml
 
 # Single instance mode
-python datasette_mcp.py --url https://example.com --id mydb
+python -m datasette_mcp.main --url https://example.com --id mydb
 ```
 
 ### Transport Options
 
 ```bash
 # stdio (default, for MCP clients)
-python datasette_mcp.py
+python -m datasette_mcp.main
 
 # HTTP server
-python datasette_mcp.py --transport streamable-http --port 8080
+python -m datasette_mcp.main --transport streamable-http --port 8080
 
 # Server-Sent Events
-python datasette_mcp.py --transport sse --host 0.0.0.0 --port 8080
+python -m datasette_mcp.main --transport sse --host 0.0.0.0 --port 8080
 ```
 
 ### All CLI Options
@@ -236,7 +236,7 @@ The server provides detailed error messages for:
 Configure logging levels for debugging:
 
 ```bash
-python datasette_mcp.py --log-level DEBUG
+python -m datasette_mcp.main --log-level DEBUG
 ```
 
 Log levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`
