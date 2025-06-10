@@ -21,7 +21,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Any
-from urllib.parse import urlencode, quote
+from urllib.parse import urlencode, quote, urljoin
 import argparse
 import logging
 
@@ -125,6 +125,24 @@ def build_url_with_params(base_url: str, params: List[tuple]) -> str:
         return base_url
     return f"{base_url}?{urlencode(params)}"
 
+def safe_url_join(base_url: str, *paths: str) -> str:
+    """Safely join base URL with path components, handling trailing slashes properly."""
+    # Ensure base_url ends with exactly one slash for urljoin to work correctly
+    if not base_url.endswith('/'):
+        base_url += '/'
+    
+    # Join all path components
+    url = base_url
+    for path in paths:
+        # Remove leading slash from path to avoid urljoin treating it as absolute
+        path = path.lstrip('/')
+        url = urljoin(url, path)
+        # Ensure intermediate URLs end with slash for proper joining
+        if not url.endswith('/') and paths.index(path) < len(paths) - 1:
+            url += '/'
+    
+    return url
+
 def build_sql_query_url(
     base_url: str,
     database: str,
@@ -137,7 +155,7 @@ def build_sql_query_url(
     next_token: Optional[str] = None
 ) -> str:
     """Build URL for executing custom SQL query."""
-    url = f"{base_url.rstrip('/')}/{quote(database)}.json"
+    url = safe_url_join(base_url, f"{quote(database)}.json")
     params = [("sql", sql)]
     
     if shape is not None:
@@ -168,7 +186,7 @@ def build_search_table_url(
     json_columns: Optional[List[str]] = None
 ) -> str:
     """Build URL for full-text search within a table."""
-    url = f"{base_url.rstrip('/')}/{quote(database)}/{quote(table)}.json"
+    url = safe_url_join(base_url, quote(database), f"{quote(table)}.json")
     params = []
     
     if search_column:
@@ -194,11 +212,11 @@ def build_search_table_url(
 
 def build_list_databases_url(base_url: str) -> str:
     """Build URL for listing all databases."""
-    return f"{base_url.rstrip('/')}/.json"
+    return safe_url_join(base_url, ".json")
 
-def build_list_tables_url(base_url: str, database: str, shape: Optional[str] = None, size: Optional[int] = None, next_token: Optional[str] = None) -> str:
-    """Build URL for listing tables in a database."""
-    url = f"{base_url.rstrip('/')}/{quote(database)}.json"
+def build_database_url(base_url: str, database: str, shape: Optional[str] = None, size: Optional[int] = None, next_token: Optional[str] = None) -> str:
+    """Build URL for getting database metadata (including tables)."""
+    url = safe_url_join(base_url, f"{quote(database)}.json")
     params = []
     if shape is not None:
         params.append(("_shape", shape))
@@ -215,7 +233,7 @@ def build_describe_table_url(
     shape: Optional[str] = None
 ) -> str:
     """Build URL for getting table schema and metadata."""
-    url = f"{base_url.rstrip('/')}/{quote(database)}/{quote(table)}.json"
+    url = safe_url_join(base_url, quote(database), f"{quote(table)}.json")
     params = []
     if shape is not None:
         params.append(("_shape", shape))
@@ -418,7 +436,7 @@ async def list_tables(instance: str, database: str, ctx: Context = None) -> Dict
     try:
         instance_config = get_instance_config(Config, instance)
         
-        url = build_list_tables_url(instance_config['url'], database)
+        url = build_database_url(instance_config['url'], database)
         
         if ctx:
             await ctx.info(f"Listing tables for {instance}/{database}")
@@ -433,6 +451,37 @@ async def list_tables(instance: str, database: str, ctx: Context = None) -> Dict
     except Exception as e:
         if ctx:
             await ctx.error(f"Unexpected error in list_tables: {e}")
+        raise
+
+@mcp.tool()
+async def describe_database(instance: str, database: str, ctx: Context = None) -> Dict[str, Any]:
+    """Get complete database metadata including all table schemas and column information.
+    
+    Args:
+        instance: Name of the Datasette instance (from config)
+        database: Database name
+        
+    Returns:
+        Complete database metadata with all tables and their schemas
+    """
+    try:
+        instance_config = get_instance_config(Config, instance)
+        
+        url = build_database_url(instance_config['url'], database)
+        
+        if ctx:
+            await ctx.info(f"Describing database {instance}/{database}")
+        
+        return await make_datasette_request(url, "describe_database", instance)
+        
+    except ValueError as e:
+        # Configuration errors (instance not found, missing URL, etc.) or Datasette API errors
+        if ctx:
+            await ctx.error(f"Error in describe_database: {e}")
+        raise
+    except Exception as e:
+        if ctx:
+            await ctx.error(f"Unexpected error in describe_database: {e}")
         raise
 
 @mcp.tool()
