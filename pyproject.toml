@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "datasette-mcp"
-version = "0.5.1"
+version = "0.6.0"
 description = "A Model Context Protocol server for Datasette instances"
 authors = [
     {name = "Your Name", email = "your.email@example.com"},
