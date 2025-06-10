@@ -372,7 +372,7 @@ async def list_databases(instance: str, ctx: Context = None) -> Dict[str, Any]:
         List of databases and metadata
     """
     try:
-        instance_config = get_instance_config(instance)
+        instance_config = get_instance_config(Config, instance)
         
         url = build_list_databases_url(instance_config['url'])
         
@@ -416,7 +416,7 @@ async def list_tables(instance: str, database: str, ctx: Context = None) -> Dict
         List of tables and metadata
     """
     try:
-        instance_config = get_instance_config(instance)
+        instance_config = get_instance_config(Config, instance)
         
         url = build_list_tables_url(instance_config['url'], database)
         
@@ -448,7 +448,7 @@ async def describe_table(instance: str, database: str, table: str, ctx: Context 
         Table schema and metadata
     """
     try:
-        instance_config = get_instance_config(instance)
+        instance_config = get_instance_config(Config, instance)
         
         url = build_describe_table_url(instance_config['url'], database, table)
         
