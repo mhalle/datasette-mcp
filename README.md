@@ -16,24 +16,27 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 
 ### Prerequisites
 
-- Python 3.8+
-- [FastMCP](https://gofastmcp.com/) framework
+- Python 3.10+
+- [uv](https://docs.astral.sh/uv/) package manager
 
-### Using uv (recommended)
+### Install as a tool
 
 ```bash
-# Run directly with uv
-uv run --module datasette_mcp.main --help
+# Install directly from GitHub
+uv tool install git+https://github.com/mhalle/datasette-mcp.git
 
-# Or install dependencies first
-uv sync
+# Check installation
+datasette-mcp --help
 ```
 
-### Using pip
+### Development installation
 
 ```bash
-pip install fastmcp httpx pyyaml
-python -m datasette_mcp.main --help
+# Clone and install for development
+git clone https://github.com/mhalle/datasette-mcp.git
+cd datasette-mcp
+uv sync
+uv run datasette-mcp --help
 ```
 
 ## Configuration
@@ -70,7 +73,7 @@ The server automatically searches for config files in:
 For quick single-instance setup:
 
 ```bash
-python -m datasette_mcp.main \
+datasette-mcp \
   --url https://my-datasette.herokuapp.com \
   --id my_db \
   --description "My database"
@@ -82,26 +85,38 @@ python -m datasette_mcp.main \
 
 ```bash
 # Use auto-discovered config file
-python -m datasette_mcp.main
+datasette-mcp
 
 # Use specific config file
-python -m datasette_mcp.main --config /path/to/config.yaml
+datasette-mcp --config /path/to/config.yaml
 
 # Single instance mode
-python -m datasette_mcp.main --url https://example.com --id mydb
+datasette-mcp --url https://example.com --id mydb
 ```
 
 ### Transport Options
 
 ```bash
 # stdio (default, for MCP clients)
-python -m datasette_mcp.main
+datasette-mcp
 
 # HTTP server
-python -m datasette_mcp.main --transport streamable-http --port 8080
+datasette-mcp --transport streamable-http --port 8080
 
 # Server-Sent Events
-python -m datasette_mcp.main --transport sse --host 0.0.0.0 --port 8080
+datasette-mcp --transport sse --host 0.0.0.0 --port 8080
+```
+
+### Development Usage
+
+When developing or testing:
+
+```bash
+# Run from source with uv
+uv run datasette-mcp --url https://example.com
+
+# Install in development mode
+uv tool install --editable .
 ```
 
 ### All CLI Options
@@ -263,10 +278,23 @@ The server provides detailed error messages for:
 Configure logging levels for debugging:
 
 ```bash
-python -m datasette_mcp.main --log-level DEBUG
+datasette-mcp --log-level DEBUG
 ```
 
 Log levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`
+
+### Tool Management
+
+```bash
+# List installed tools
+uv tool list
+
+# Upgrade to latest version
+uv tool upgrade datasette-mcp
+
+# Uninstall
+uv tool uninstall datasette-mcp
+```
 
 ## Contributing
 
