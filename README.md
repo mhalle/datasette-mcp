@@ -118,6 +118,36 @@ python -m datasette_mcp.main --transport sse --host 0.0.0.0 --port 8080
 --log-level LEVEL         Logging level: DEBUG, INFO, WARNING, ERROR
 ```
 
+## Claude Code Integration
+
+To use this MCP server with [Claude Code](https://claude.ai/code):
+
+### 1. Install the server
+
+```bash
+uv tool install git+https://github.com/mhalle/datasette-mcp.git
+```
+
+### 2. Add to Claude Code
+
+```bash
+claude mcp add datasette-mcp -- datasette-mcp --url https://your-datasette-instance.com
+```
+
+Or with a configuration file:
+
+```bash
+claude mcp add datasette-mcp -- datasette-mcp --config /path/to/config.yaml
+```
+
+### 3. Use with scopes (optional)
+
+```bash
+claude mcp add -s data-analysis datasette-mcp -- datasette-mcp --url https://analytics.example.com
+```
+
+Once added, Claude Code will have access to explore and query your Datasette instances directly within conversations.
+
 ## Available Tools
 
 The server provides these MCP tools for AI assistants:
@@ -126,17 +156,10 @@ The server provides these MCP tools for AI assistants:
 List all configured Datasette instances and their details.
 
 ### `list_databases(instance)`
-List all databases available in a Datasette instance.
+List all databases in a Datasette instance with table counts.
 
-### `list_tables(instance, database)`
-List all tables in a specific database.
-
-### `describe_table(instance, database, table)`
-Get detailed schema information for a table, including:
-- Column names and types
-- Primary keys
-- Foreign key relationships
-- Table metadata
+### `describe_database(instance, database)`
+Get complete database schema including all table structures, columns, types, and relationships in one efficient call.
 
 ### `execute_sql(instance, database, sql, ...)`
 Execute custom SQL queries with options for:
@@ -144,14 +167,16 @@ Execute custom SQL queries with options for:
 - `json_columns`: Parse specific columns as JSON
 - `trace`: Include performance trace information
 - `timelimit`: Query timeout in milliseconds
-- `size`: Maximum number of results
-- `next_token`: Pagination support
+- `size`: Maximum number of results per page
+- `next_token`: Pagination token for getting next page
 
 ### `search_table(instance, database, table, search_term, ...)`
-Perform full-text search within a table:
+Perform full-text search within a table with options for:
 - `search_column`: Search only in specific column
-- `columns`: Return only specific columns
+- `columns`: Return only specific columns to reduce tokens
 - `raw_mode`: Enable advanced FTS operators (AND, OR, NOT)
+- `size`: Maximum number of results per page
+- `next_token`: Pagination token for getting next page
 
 ## Usage Examples
 
@@ -163,8 +188,9 @@ instances = await list_instances()
 
 # Explore a specific instance
 databases = await list_databases("my_database")
-tables = await list_tables("my_database", "main")
-schema = await describe_table("my_database", "main", "users")
+
+# Get complete database schema with all tables
+schema = await describe_database("my_database", "main")
 ```
 
 ### Querying Data
@@ -177,13 +203,14 @@ users = await execute_sql(
     "SELECT * FROM users ORDER BY created_date DESC LIMIT 10"
 )
 
-# Search for specific content
+# Search for specific content with limited columns
 results = await search_table(
     "my_database", 
     "main", 
     "posts", 
     "machine learning",
-    columns=["title", "content", "author"]
+    columns=["title", "content", "author"],
+    size=20
 )
 ```
 
