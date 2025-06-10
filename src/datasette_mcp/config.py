@@ -263,11 +263,19 @@ def build_instructions(config: Dict[str, Any]) -> str:
     • Combine multiple tables with JOINs when needed
     • Quote column names with spaces: SELECT [First Name], [Last Name] FROM users
     
+    PAGINATION FOR LARGE RESULTS:
+    • Use size parameter to limit results: execute_sql(..., size=100)
+    • Check response for next_url - if present, more results available
+    • Use next_token from response to get next page: execute_sql(..., next_token="abc123")
+    • Same pagination works for search_table(..., size=50, next_token="xyz789")
+    
     FULL-TEXT SEARCH:
     • Use search_table() instead of complex SQLite FTS syntax
     • Try simple terms first: search_table("prod", "blog", "posts", "climate change")
     • Use raw_mode=True for AND/OR/NOT: search_table(..., raw_mode=True) with "term1 AND term2"
     • Search specific columns: search_table(..., search_column="title")
+    • Limit columns to reduce tokens: search_table(..., columns=["title", "id", "date"])
+    • Paginate large search results: search_table(..., size=20) then use next_token
     """
     
     # Build dataset description section

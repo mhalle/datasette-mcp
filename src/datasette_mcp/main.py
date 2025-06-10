@@ -183,7 +183,8 @@ def build_search_table_url(
     raw_mode: Optional[bool] = None,
     shape: Optional[str] = None,
     size: Optional[int] = None,
-    json_columns: Optional[List[str]] = None
+    json_columns: Optional[List[str]] = None,
+    next_token: Optional[str] = None
 ) -> str:
     """Build URL for full-text search within a table."""
     url = safe_url_join(base_url, quote(database), f"{quote(table)}.json")
@@ -207,6 +208,8 @@ def build_search_table_url(
         params.append(("_size", str(size)))
     if json_columns:
         params.append(("_json", ",".join(json_columns)))
+    if next_token is not None:
+        params.append(("_next", next_token))
     
     return build_url_with_params(url, params)
 
@@ -310,6 +313,7 @@ async def search_table(
     shape: Optional[str] = None,
     size: Optional[int] = None,
     json_columns: Optional[List[str]] = None,
+    next_token: Optional[str] = None,
     ctx: Context = None
 ) -> Dict[str, Any]:
     """Full-text search within a table using Datasette's search functionality.
@@ -325,16 +329,17 @@ async def search_table(
         shape: JSON shape - "arrays", "objects", or "array" (uses Datasette default if not specified)
         size: Maximum number of results (uses Datasette default if not specified)
         json_columns: List of columns to parse as JSON
+        next_token: Pagination token from previous response to get next page
         
     Returns:
-        Search results and metadata
+        Search results and metadata (includes 'next_url' for pagination if more results available)
     """
     try:
         instance_config = get_instance_config(Config, instance)
         
         url = build_search_table_url(
             instance_config['url'], database, table, search_term, search_column, 
-            columns, raw_mode, shape, size, json_columns
+            columns, raw_mode, shape, size, json_columns, next_token
         )
         
         if ctx:
