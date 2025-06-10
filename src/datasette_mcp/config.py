@@ -166,16 +166,19 @@ def validate_config(config: Dict[str, Any]) -> bool:
 
 
 def derive_id_from_url(url: str) -> str:
-    """Derive instance ID from URL hostname by replacing . and : with _"""
-    parsed = urlparse(url)
-    hostname = parsed.hostname or "unknown"
+    """Derive instance ID from URL by escaping special characters and prefixing with _"""
+    import re
     
-    # Add port if present
-    if parsed.port:
-        hostname = f"{hostname}:{parsed.port}"
+    # Replace all non-alphanumeric characters with underscores
+    escaped = re.sub(r'[^a-zA-Z0-9]', '_', url)
     
-    # Replace . and : with _
-    return hostname.replace(".", "_").replace(":", "_")
+    # Remove multiple consecutive underscores
+    escaped = re.sub(r'_+', '_', escaped)
+    
+    # Remove leading/trailing underscores, then add single leading underscore
+    escaped = escaped.strip('_')
+    
+    return f"_{escaped}"
 
 
 def build_config_from_cli(args) -> Dict[str, Any]:
