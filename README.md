@@ -1,5 +1,8 @@
 # Datasette MCP
 
+> **⚠️ ALPHA SOFTWARE WARNING**  
+> This implementation is in early alpha and should **NOT** be used for production environments. MCP servers have serious potential safety issues that must be considered when accessing unvetted data. **Use at your own risk.**
+
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides read-only access to [Datasette](https://datasette.io/) instances. This server enables AI assistants to explore, query, and analyze data from Datasette databases through a standardized interface.
 
 ## Features
