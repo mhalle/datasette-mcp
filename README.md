@@ -210,33 +210,33 @@ Perform full-text search within a table with options for:
 
 ### Exploring Data Structure
 
-```python
-# List available instances
-instances = await list_instances()
+```
+# Step 1: See what Datasette instances are available
+list_instances()
 
-# Explore a specific instance
-databases = await list_databases("my_database")
+# Step 2: Explore databases in your chosen instance  
+list_databases(instance="my_database")
 
-# Get complete database schema with all tables
-schema = await describe_database("my_database", "main")
+# Step 3: Get complete database schema with all tables and columns
+describe_database(instance="my_database", database="main")
 ```
 
 ### Querying Data
 
-```python
-# Get recent users
-users = await execute_sql(
-    "my_database", 
-    "main", 
-    "SELECT * FROM users ORDER BY created_date DESC LIMIT 10"
+```
+# Get recent users with SQL
+execute_sql(
+    instance="my_database", 
+    database="main", 
+    sql="SELECT * FROM users ORDER BY created_date DESC LIMIT 10"
 )
 
-# Search for specific content with limited columns
-results = await search_table(
-    "my_database", 
-    "main", 
-    "posts", 
-    "machine learning",
+# Search for specific content with limited columns to reduce tokens
+search_table(
+    instance="my_database", 
+    database="main", 
+    table="posts", 
+    search_term="machine learning",
     columns=["title", "content", "author"],
     size=20
 )
@@ -244,28 +244,22 @@ results = await search_table(
 
 ### Advanced Queries
 
-```python
-# Complex aggregation with pagination
-stats = await execute_sql(
-    "my_database",
-    "main",
-    """
-    SELECT category, COUNT(*) as count, AVG(price) as avg_price
-    FROM products 
-    WHERE created_date > '2024-01-01'
-    GROUP BY category
-    ORDER BY count DESC
-    """,
+```
+# Complex aggregation with pagination for large result sets
+execute_sql(
+    instance="my_database",
+    database="main",
+    sql="SELECT category, COUNT(*) as count, AVG(price) as avg_price FROM products WHERE created_date > '2024-01-01' GROUP BY category ORDER BY count DESC",
     size=50
 )
 
-# Search with advanced operators
-results = await search_table(
-    "my_database",
-    "main",
-    "articles",
-    "python AND (fastapi OR django)",
-    raw_mode=True
+# Search with advanced FTS operators
+search_table(
+    instance="my_database",
+    database="main",
+    table="articles",
+    search_term="python AND (fastapi OR django)",
+    raw_mode=true
 )
 ```
 
