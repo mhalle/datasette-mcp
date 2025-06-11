@@ -29,6 +29,16 @@ uv tool install git+https://github.com/mhalle/datasette-mcp.git
 datasette-mcp --help
 ```
 
+### Run without installation
+
+```bash
+# Run directly with uvx (no installation required)
+uvx git+https://github.com/mhalle/datasette-mcp.git --url https://your-datasette.com
+
+# Or with config file
+uvx git+https://github.com/mhalle/datasette-mcp.git --config /path/to/config.yaml
+```
+
 ### Development installation
 
 ```bash
